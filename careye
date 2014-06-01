@@ -1,0 +1,71 @@
+/*####################################################################
+ Houston Hackaton 2014 
+ VERSION: 1
+ AUTHOR: Rocco De Grazia (twitter: @roccodegrazia)
+ PURPOSE: CarEye, Measure temperature and human presence and call parent in case of emergency
+ HELP: Please read the readme file on this repo for more information about which hardware to use
+ LICENSE: GPL v3 (http://www.gnu.org/licenses/gpl.html)
+ CREDITS: A number of people have worked on the dht11 library that I use below to read temperature out of this inexpensive 
+ sensor. Their most up to date work is available at www.virtuabotix.com
+########################################################################*/
+
+#include <dht11.h>
+#include <SoftwareSerial.h>
+#include <String.h>
+
+dht11 DHT11;
+SoftwareSerial mySerial(7, 8);
+void setup()
+{
+  mySerial.begin(19200);  // GPRS baud rate   
+  Serial.begin(19200);    // GPRS baud rate 
+  delay(500);
+  
+  DHT11.attach(2);
+  Serial.begin(9600);
+  Serial.println("TESTING TEMPERATURE READING ");
+  
+  //Here come the human presence sensor pieces
+  pinMode(13,OUTPUT);
+  pinMode(3,INPUT);
+  
+}
+
+void loop()
+{
+  Serial.println("\n");
+
+  int chk = DHT11.read();
+
+  Serial.print("Sensor reports: ");
+  switch (chk)
+  {
+    case 0: Serial.println("Sensor is working and ok"); break;
+    case -1: Serial.println("Checksum error"); break;
+    case -2: Serial.println("Time out error"); break;
+    default: Serial.println("Unknown error"); break;
+  }
+  Serial.print("Temperature (F): ");
+  Serial.println(DHT11.fahrenheit(), DEC);
+  //Here is the PID check
+  digitalWrite(13,digitalRead(3));
+  Serial.print("Presence is: ");
+  //presence = digitalRead3
+  Serial.println(digitalRead(3));
+  delay(500);
+  
+  if (DHT11.fahrenheit() > 90) //calling based just on temperature right now since human presence requires further calibration and time
+  {
+     DialVoiceCall();
+  }
+}
+
+///this function is to dial
+void DialVoiceCall()
+{
+ Serial.print("Calling phone now");
+ mySerial.println("ATD + +XXXXXXXXXX;");//dial the number REMEMBER TO REPLACE THE X WITH A PHONE NUMBER
+ delay(30000); //delay of 30 seconds 
+ mySerial.println("ATH"); //hang up the call
+ mySerial.println();
+}
